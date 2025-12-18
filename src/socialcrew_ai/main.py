@@ -7,11 +7,25 @@ from datetime import datetime
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 from socialcrew_ai.crew import SocialcrewAi
 
 warnings.filterwarnings("ignore", category=SyntaxWarning, module="pysbd")
 
+
 app = FastAPI(title="SocialCrew AI API")
+
+# CORS setup: allow Vercel frontend and localhost for dev
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://socialcrew-ai-frontend.vercel.app/",  # Vercel prod
+        "http://localhost:3000"  # Local dev
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class RunRequest(BaseModel):
     topic: str = "AI LLMs"
