@@ -1,0 +1,13 @@
+generate_content_task:
+  description: >
+    Produce short social media posts for X and LinkedIn about "{topic}". Keep it concise and on-topic.
+  expected_output: >
+    JSON with two platforms (x, linkedin), each containing 3 post variants with hook, body, cta, and hashtags.
+  agent: content_creator
+
+analytics_task:
+  description: >
+    Based on the generated posts about "{topic}", summarize top-performing ideas and give 3 recommendations.
+  expected_output: >
+    Markdown summary listing top posts and 3 tactical recommendations.
+  agent: social_analyst
