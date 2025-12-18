@@ -3,6 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
 from fastapi import HTTPException
 import os
+from datetime import datetime
+import sys
+from socialcrew_ai.crew import SocialcrewAi
 
 app = FastAPI()
 app.add_middleware(
@@ -112,14 +115,6 @@ from pydantic import BaseModel
 # Pydantic models for /run endpoint
 class RunRequest(BaseModel):
     topic: str
-
-class RunResponse(BaseModel):
-    status: str
-    topic: str
-    year: str
-    message: str
-
-message: str
 
 
 def run(topic: str = "AI LLMs"):
