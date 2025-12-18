@@ -1,4 +1,38 @@
-from fastapi.responses import FileResponse
+from fastapi.responses import HTMLResponse
+# Root endpoint: Friendly HTML welcome page
+@app.get("/", response_class=HTMLResponse)
+def root():
+    return """
+    <html>
+        <head>
+            <title>SocialCrew AI Backend</title>
+            <style>
+                body { font-family: Arial, sans-serif; background: #18181b; color: #fafafa; margin: 0; padding: 2rem; }
+                .container { max-width: 600px; margin: auto; background: #23232a; border-radius: 12px; box-shadow: 0 2px 8px #0003; padding: 2rem; }
+                h1 { color: #60a5fa; }
+                a { color: #38bdf8; text-decoration: none; }
+                a:hover { text-decoration: underline; }
+                ul { margin-top: 1rem; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>👋 Welcome to SocialCrew AI Backend</h1>
+                <p>This is the backend API for SocialCrew AI, powering social content analytics and generation.</p>
+                <h2>Useful Endpoints</h2>
+                <ul>
+                    <li><b>POST</b> <code>/run</code> &mdash; Run the main AI workflow</li>
+                    <li><b>GET</b> <code>/file/&lt;name&gt;</code> &mdash; Download output files (e.g., <code>social_posts.json</code>, <code>analytics_summary.md</code>, <code>user_preference.txt</code>)</li>
+                </ul>
+                <h2>Frontend</h2>
+                <p>Visit the <a href="https://socialcrew-ai-frontend.vercel.app" target="_blank">SocialCrew AI Frontend</a> for the user interface.</p>
+                <hr>
+                <small>SocialCrew AI &copy; 2025</small>
+            </div>
+        </body>
+    </html>
+    """
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi import HTTPException
 #!/usr/bin/env python
 
@@ -30,16 +64,35 @@ app.add_middleware(
 )
 
 # Serve output files for frontend
+import os
+
 @app.get("/file/{name}")
 def get_file(name: str):
     allowed = {"social_posts.json", "analytics_summary.md", "user_preference.txt"}
     if name not in allowed:
         raise HTTPException(status_code=404, detail="File not found")
-    file_path = name
-    try:
-        return FileResponse(file_path)
-    except Exception:
+
+    # Determine file path (relative to backend root)
+    backend_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if name == "user_preference.txt":
+        file_path = os.path.join(backend_root, "knowledge", name)
+    else:
+        file_path = os.path.join(backend_root, name)
+
+    if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="File not found")
+
+    # Serve JSON as JSONResponse, others as FileResponse
+    if name.endswith(".json"):
+        try:
+            import json
+            with open(file_path, "r") as f:
+                data = json.load(f)
+            return JSONResponse(content=data)
+        except Exception:
+            raise HTTPException(status_code=500, detail="Error reading JSON file")
+    else:
+        return FileResponse(file_path)
 
 class RunRequest(BaseModel):
     topic: str = "AI LLMs"
