@@ -1,46 +1,44 @@
 ```json
 {
-  "platforms": {
-    "x": [
-      {
-        "hook": "UNLEASH YOUR CRICKET FEVER",
-        "body": "The ICC World Cup is coming! Who's team are you rooting for? Share your favorite players and teams in the comments!",
-        "cta": "Like and share with your cricket-loving friends!",
-        "hashtag": "#CricketWorldCup #CricketFever #Sports"
-      },
-      {
-        "hook": "CRICKET NEWS YOU NEED TO KNOW",
-        "body": "Just broke: Rohit Sharma sets a new record for the most ODI centuries! What do you think about this incredible achievement? Share your thoughts!",
-        "cta": "Reply in the comments with your predictions for future cricket milestones!",
-        "hashtag": "#CricketNews #CricketRecords #Sports"
-      },
-      {
-        "hook": "GET READY FOR THE ULTIMATE CRICKET CHALLENGE",
-        "body": "Calling all cricket fans! Who's up for a virtual cricket tournament? Join our community and get ready to compete and win amazing prizes!",
-        "cta": "Sign up now and spread the word to your cricket-loving friends!",
-        "hashtag": "#CricketChallenge #CricketCommunity #Sports"
-      }
-    ],
-    "linkedin": [
-      {
-        "hook": "The Psychology of Cricket: What Makes a Champion",
-        "body": "Ever wondered what drives a cricketer to excel? A deep dive into the world of cricket psychology reveals surprising insights into the minds of champions.",
-        "cta": "Read the full article and share your thoughts on the importance of mental toughness in sports!",
-        "hashtag": "#CricketPsychology #SportsMentalToughness #PerformanceMindset"
-      },
-      {
-        "hook": "How Cricket Can Drive Business Success",
-        "body": "From teamwork to adaptability, the skills learned on the cricket field can translate surprisingly well to the corporate world. What can you learn from cricket?",
-        "cta": "Join the conversation and share your experiences of applying sports skills to business!",
-        "hashtag": "#CricketAndBusiness #SportsSkillsTransfer #Innovation"
-      },
-      {
-        "hook": "The Business of Cricket: Trends and Opportunities",
-        "body": "From sponsorship deals to player salaries, the cricket world is a multibillion-dollar industry with exciting opportunities for entrepreneurs and investors.",
-        "cta": "Stay ahead of the game with the latest cricket business insights and analysis!",
-        "hashtag": "#CricketBusiness #SportsFinance #Trends"
-      }
-    ]
-  }
+  "facebook": [
+    {
+      "hook": "UNLEASH YOUR INNER ACE!",
+      "body": "Did you know that tennis improves your hand-eye coordination and reaction time? Get ready to serve up a win!",
+      "cta": "Sign up for a lesson with our tennis coaches today!",
+      "hashtags": "#tennis #fitness #sports"
+    },
+    {
+      "hook": "TENNIS TRIVIA TIME!",
+      "body": "The earliest known tennis ball was made from wood. Can you believe it?",
+      "cta": "Share your favorite tennis fact in the comments below!",
+      "hashtags": "#tennis #history #sports"
+    },
+    {
+      "hook": "IT'S TENNIS TUESDAY!",
+      "body": "New week, new goals. What are you working towards on the court?",
+      "cta": "Join our tennis community to stay motivated!",
+      "hashtags": "#tennistuesday #motivation #sports"
+    }
+  ],
+  "linkedin": [
+    {
+      "hook": "The Power of Tennis for Professional Development",
+      "body": "Tennis can help you develop skills like teamwork, focus, and strategic thinking – essential for career success. Learn how tennis can take your professional game to the next level!",
+      "cta": "Download our free e-book on the benefits of tennis for professionals.",
+      "hashtags": "#tennis #professionaldevelopment #careercoach"
+    },
+    {
+      "hook": "Why Tennis is a Great Networking Opportunity",
+      "body": "Networking in a tennis setting can lead to valuable connections and new business opportunities. Don't miss out on the chance to meet fellow tennis enthusiasts.",
+      "cta": "Join our tennis networking event and take your business to the next level.",
+      "hashtags": "#tennis #networking #businessevent"
+    },
+    {
+      "hook": "Get Ready to Level Up Your Game",
+      "body": "Are you looking to improve your tennis game? Our expert coaches offer personalized lessons to help you achieve your goals.",
+      "cta": "Book a lesson with our trainers today!",
+      "hashtags": "#tennis #coaching #sports"
+    }
+  ]
 }
 ```
