@@ -1,4 +1,22 @@
-from fastapi.responses import HTMLResponse
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
+from fastapi import HTTPException
+import os
+
+app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://socialcrew-ai-frontend.vercel.app",  # Vercel prod
+        "http://localhost:3000"  # Local dev
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Root endpoint: Friendly HTML welcome page
 @app.get("/", response_class=HTMLResponse)
 def root():
@@ -32,40 +50,8 @@ def root():
         </body>
     </html>
     """
-from fastapi.responses import FileResponse, JSONResponse
-from fastapi import HTTPException
-#!/usr/bin/env python
-
-import sys
-import warnings
-import os
-from datetime import datetime
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from fastapi.responses import JSONResponse
-from fastapi.middleware.cors import CORSMiddleware
-from socialcrew_ai.crew import SocialcrewAi
-
-warnings.filterwarnings("ignore", category=SyntaxWarning, module="pysbd")
-
-
-app = FastAPI(title="SocialCrew AI API")
-
-# CORS setup: allow Vercel frontend and localhost for dev
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "https://socialcrew-ai-frontend.vercel.app",  # Vercel prod
-        "http://localhost:3000"  # Local dev
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 # Serve output files for frontend
-import os
-
 @app.get("/file/{name}")
 def get_file(name: str):
     allowed = {"social_posts.json", "analytics_summary.md", "user_preference.txt"}
@@ -94,14 +80,7 @@ def get_file(name: str):
     else:
         return FileResponse(file_path)
 
-class RunRequest(BaseModel):
-    topic: str = "AI LLMs"
-
-class RunResponse(BaseModel):
-    status: str
-    topic: str
-    year: str
-    message: str
+message: str
 
 
 def run(topic: str = "AI LLMs"):
