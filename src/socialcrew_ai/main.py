@@ -1,3 +1,5 @@
+from fastapi.responses import FileResponse
+from fastapi import HTTPException
 #!/usr/bin/env python
 
 import sys
@@ -19,13 +21,25 @@ app = FastAPI(title="SocialCrew AI API")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://socialcrew-ai-frontend.vercel.app/",  # Vercel prod
+        "https://socialcrew-ai-frontend.vercel.app",  # Vercel prod
         "http://localhost:3000"  # Local dev
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Serve output files for frontend
+@app.get("/file/{name}")
+def get_file(name: str):
+    allowed = {"social_posts.json", "analytics_summary.md", "user_preference.txt"}
+    if name not in allowed:
+        raise HTTPException(status_code=404, detail="File not found")
+    file_path = name
+    try:
+        return FileResponse(file_path)
+    except Exception:
+        raise HTTPException(status_code=404, detail="File not found")
 
 class RunRequest(BaseModel):
     topic: str = "AI LLMs"
