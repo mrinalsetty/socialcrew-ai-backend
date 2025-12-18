@@ -1,29 +1,36 @@
 #!/usr/bin/env python
+
 import sys
 import warnings
 import os
-
 from datetime import datetime
-
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from fastapi.responses import JSONResponse
 from socialcrew_ai.crew import SocialcrewAi
 
 warnings.filterwarnings("ignore", category=SyntaxWarning, module="pysbd")
 
-# This main file is intended to be a way for you to run your
-# crew locally, so refrain from adding unnecessary logic into this file.
-# Replace with inputs you want to test with, it will automatically
-# interpolate any tasks and agents information
+app = FastAPI(title="SocialCrew AI API")
 
-def run():
+class RunRequest(BaseModel):
+    topic: str = "AI LLMs"
+
+class RunResponse(BaseModel):
+    status: str
+    topic: str
+    year: str
+    message: str
+
+
+def run(topic: str = "AI LLMs"):
     """
     Run the crew.
     """
-    topic = os.environ.get('TOPIC') or 'AI LLMs'
     inputs = {
         'topic': topic,
         'current_year': str(datetime.now().year)
     }
-    
     from pathlib import Path
     log_path = Path("run.log")
     ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -35,11 +42,21 @@ def run():
         # Append run completion to log
         with log_path.open("a", encoding="utf-8") as fh:
             fh.write(f"[{ts}] status=completed topic={topic} year={inputs['current_year']}\n")
+        return {"status": "completed", "topic": topic, "year": inputs['current_year'], "message": "Crew run completed successfully."}
     except Exception as e:
         # Append failure to log
         with log_path.open("a", encoding="utf-8") as fh:
             fh.write(f"[{ts}] status=failed topic={topic} error={e}\n")
-        raise Exception(f"An error occurred while running the crew: {e}")
+        return {"status": "failed", "topic": topic, "year": inputs['current_year'], "message": str(e)}
+
+
+# FastAPI endpoint
+@app.post("/run", response_model=RunResponse)
+async def run_crew_api(request: RunRequest):
+    result = run(request.topic)
+    if result["status"] == "failed":
+        raise HTTPException(status_code=500, detail=result["message"])
+    return result
 
 
 def train():
@@ -85,5 +102,5 @@ def test():
 
 
 if __name__ == "__main__":
-    # Allow `python -m socialcrew_ai.main` to run the default entry
-    run()
+    import uvicorn
+    uvicorn.run("socialcrew_ai.main:app", host="0.0.0.0", port=int(os.environ.get("PORT", 8000)), reload=True)

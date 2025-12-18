@@ -1,17 +1,59 @@
 # SocialCrew AI — Backend
 
-A Python backend powered by CrewAI that generates short-form social content and an analytics summary for a given topic. It produces two primary outputs in this folder:
+## Overview
 
-- `social_posts.json`: structured social posts (X and LinkedIn) with hooks, body, CTA, and hashtags.
-- `analytics_summary.md`: a markdown summary with top-performing ideas and recommendations.
+SocialCrew AI is a modular, agent-based backend system for generating and analyzing social media content using LLMs. It is built with modern Python, leverages the CrewAI framework for agent orchestration, and exposes a robust HTTP API using FastAPI for seamless integration with web frontends or other services.
 
-The backend reads agent and task definitions from YAML config and supports multiple LLM providers via environment variables.
+### Key Features
 
-## Tech Stack
+- **Agentic Content Generation:** Uses CrewAI to coordinate multiple agents (content creator, analyst, etc.) for producing high-quality, structured social posts and analytics.
+- **Configurable via YAML:** Agent roles, goals, and tasks are defined in YAML for easy customization.
+- **Multi-provider LLM Support:** Works with OpenAI, Groq, and other OpenAI-compatible APIs via environment variables.
+- **Modern Python Packaging:** Uses `pyproject.toml` and hatchling for reproducible builds and dependency management.
+- **HTTP API:** Exposes a FastAPI app for running the workflow as a web service (suitable for Render, etc.).
+- **CLI Entrypoints:** Also supports running, training, replaying, and testing via CLI or Python module.
 
-- Python 3.10–3.13
-- [CrewAI](https://docs.crewai.com/) (`crewai[tools]`)
-- Project packaging via `pyproject.toml` (hatchling build backend)
+---
+
+## Architecture
+
+```
+┌────────────┐      HTTP POST /run      ┌──────────────┐
+│  Frontend  │ ───────────────────────▶ │   FastAPI    │
+│ (Next.js)  │                         │  (main.py)   │
+└────────────┘   ◀───── JSON resp ─────┘      │
+        │                                    │
+        ▼                                    ▼
+  Reads/Streams                      CrewAI Orchestration
+   social_posts.json,                ┌─────────────────────┐
+   analytics_summary.md   ─────────▶ │  SocialcrewAi Crew  │
+   run.log (outputs)                 └─────────────────────┘
+```
+
+### Main Components
+
+- **FastAPI App:** Exposes `/run` endpoint for triggering the workflow. Accepts a topic, returns status and output info.
+- **CrewAI Orchestration:** `crew.py` defines the agents, tasks, and process. `main.py` runs the workflow and logs results.
+- **Config:** YAML files in `config/` define agent personalities and task flows.
+- **Outputs:**
+  - `social_posts.json`: Posts for X and LinkedIn (hook, body, CTA, hashtags)
+  - `analytics_summary.md`: Markdown summary of top ideas and recommendations
+  - `run.log`: Status log for each run
+
+---
+
+## Tools, Libraries, and Frameworks
+
+- **Python 3.10–3.13**: Modern language features and type hints
+- **[CrewAI](https://docs.crewai.com/)**: Agent orchestration, LLM integration, YAML config
+- **[FastAPI](https://fastapi.tiangolo.com/)**: High-performance async HTTP API
+- **[Uvicorn](https://www.uvicorn.org/)**: ASGI server for FastAPI (production-ready)
+- **[Pydantic](https://docs.pydantic.dev/)**: Data validation and settings management
+- **Hatchling**: Build backend for Python packaging
+- **YAML**: Agent/task config
+- **Render**: (Recommended) for cloud deployment as a web service
+
+---
 
 ## Project Structure
 
@@ -19,7 +61,7 @@ The backend reads agent and task definitions from YAML config and supports multi
 backend/
   src/socialcrew_ai/
     crew.py           # Crew setup: agents, tasks, process
-    main.py           # Entry points: run/train/replay/test
+    main.py           # FastAPI app, CLI entrypoints
     config/
       agents.yaml     # Agent roles, goals, backstory
       tasks.yaml      # Task descriptions and expected outputs
@@ -30,7 +72,103 @@ backend/
   run.log             # Run status log (appended)
   .env                # Optional environment variables for local runs
   pyproject.toml      # Dependencies and console scripts
+  Procfile            # For Render/Heroku: web process definition
 ```
+
+---
+
+## How It Works
+
+1. **Configuration:**
+   - Define agents and tasks in YAML (`config/agents.yaml`, `config/tasks.yaml`).
+   - Set LLM provider keys in `.env` or environment variables.
+2. **Run Workflow:**
+   - Via HTTP: POST to `/run` with `{ "topic": "Your Topic" }` (FastAPI)
+   - Via CLI: `run_crew` or `python -m socialcrew_ai.main`
+3. **CrewAI Orchestration:**
+   - Loads config, instantiates agents, runs tasks, coordinates outputs.
+4. **Outputs:**
+   - Writes `social_posts.json`, `analytics_summary.md`, and logs status to `run.log`.
+5. **Frontend Integration:**
+   - Next.js frontend triggers backend, streams logs, and displays outputs.
+
+---
+
+## HTTP API (FastAPI)
+
+The backend exposes a FastAPI app (see `main.py`).
+
+- **POST /run**
+  - Request: `{ "topic": "AI LLMs" }`
+  - Response: `{ "status": "completed", "topic": "AI LLMs", "year": "2025", "message": "Crew run completed successfully." }`
+  - On error: HTTP 500 with error message
+
+The app is started via Uvicorn (see `Procfile`):
+
+```
+web: uvicorn socialcrew_ai.main:app --host 0.0.0.0 --port $PORT
+```
+
+---
+
+## Setup & Usage
+
+### 1. Install dependencies
+
+```bash
+cd backend
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e .
+# or use 'uv' for fast installs on macOS arm64
+```
+
+### 2. Configure environment
+
+Create a `.env` file with your LLM provider keys (never commit secrets):
+
+```dotenv
+GROQ_API_KEY=...
+GROQ_MODEL=groq/llama-3.1-8b-instant
+# or
+OPENAI_API_KEY=...
+OPENAI_MODEL=gpt-4o-mini
+```
+
+### 3. Run as a web service (for Render, etc.)
+
+Deploy to Render as a Web Service. Render will use the `Procfile` to start the FastAPI app. The service will be available at `/run`.
+
+### 4. Run locally (CLI or module)
+
+```bash
+# CLI (after install)
+run_crew
+# or
+python -m socialcrew_ai.main
+```
+
+---
+
+## Extending & Customizing
+
+- **Add new agents/tasks:** Edit YAML in `config/` and update `crew.py` as needed.
+- **Change LLM provider:** Set different API keys/models in `.env`.
+- **Integrate with other frontends:** Use the HTTP API for easy integration.
+
+---
+
+## License & Credits
+
+- Built with [CrewAI](https://docs.crewai.com/), [FastAPI](https://fastapi.tiangolo.com/), and open-source tools.
+- See `pyproject.toml` for full dependency list.
+
+---
+
+## See Also
+
+- [Frontend README](../frontend/README.md) — Next.js app for UI and API proxying
+- [CrewAI Documentation](https://docs.crewai.com/)
 
 ## Setup
 
