@@ -1,1 +1,1 @@
-web: uvicorn socialcrew_ai.main:app --host 0.0.0.0 --port $PORT
+web: uvicorn src.socialcrew_ai.main:app --host 0.0.0.0 --port $PORT
