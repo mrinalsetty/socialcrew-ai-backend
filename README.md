@@ -95,6 +95,8 @@ You can optionally set `TOPIC` in the environment for the run:
 TOPIC="AI Agents" PYTHONPATH=src python -m socialcrew_ai.main
 ```
 
+Note: The module has a `__main__` guard, so `python -m socialcrew_ai.main` invokes `run()` by default.
+
 If your shell is zsh and sourcing `.env` is unreliable, either activate the venv or use the venv interpreter directly:
 
 ```bash
@@ -181,26 +183,91 @@ In this repository, the backend is CLI-focused; the frontend provides the HTTP l
 
 ## Quick Start
 
+This project supports multiple ways to run the backend. Use this decision guide:
+
+- Use `run_crew` when you’ve installed the package (`pip install -e .`) and want the simplest, reliable command line.
+- Use `python -m socialcrew_ai.main` when you prefer not to install and are okay setting `PYTHONPATH=src` (this mirrors how the frontend spawns locally). This now calls `run()` by default.
+- Use the explicit `run()` invocation when you want a bulletproof path that avoids shell/module quirks.
+
+### 0) Prereqs
+
 ```bash
-# 1) Create venv and install
 cd backend
 python3 -m venv .venv
 source .venv/bin/activate
+# Optional but recommended for console scripts:
 pip install -e .
 
-# 2) Add provider keys to backend/.env (do NOT commit)
+# Add provider keys to backend/.env (do NOT commit):
 # GROQ_API_KEY=...  GROQ_MODEL=groq/llama-3.1-8b-instant
+# or OPENAI_API_KEY=... OPENAI_MODEL=gpt-4o-mini
+```
 
-# 3) Run with a topic
+### Option A — Console script (recommended after install)
+
+```bash
+cd backend
+source .venv/bin/activate
+
+# Run once (uses TOPIC from environment or defaults to "AI LLMs")
+run_crew
+
+# Run with an explicit topic
+TOPIC="tennis" run_crew
+
+# Training example
+train 3 outputs.json
+
+# Replay from a task id
+replay generate_content_task
+
+# Test for N iterations using a specific evaluator/model
+test 2 gpt-4o-mini
+```
+
+### Option B — Python module (no install; mirrors frontend spawn)
+
+```bash
+cd backend
+# venv activated or use system Python with crewai available
+source .venv/bin/activate
+
+# Run with PYTHONPATH=src (module has a __main__ guard that calls run())
+PYTHONPATH=src python -m socialcrew_ai.main
+
+# With a topic
 TOPIC="tennis" PYTHONPATH=src python -m socialcrew_ai.main
 
-# Alternative explicit run
+# If you prefer not to activate venv, use its interpreter directly
+PYTHONPATH=src .venv/bin/python -m socialcrew_ai.main
+```
+
+### Option C — Explicit entry: call `run()` directly
+
+```bash
+cd backend
+source .venv/bin/activate
 TOPIC="tennis" PYTHONPATH=src python - <<'PY'
 from socialcrew_ai.main import run
 run()
 PY
+```
 
-# 4) Check outputs
+### Verify outputs
+
+```bash
+cd backend
 ls -l social_posts.json analytics_summary.md
 tail -n 10 run.log
 ```
+
+### When to use which
+
+- `run_crew`: Best for everyday usage after `pip install -e .`. Gives you `train`, `replay`, `test` commands too.
+- `python -m`: Best when you want zero install and to emulate the frontend’s local spawn behavior. Requires `PYTHONPATH=src`.
+- Explicit `run()` heredoc: Most deterministic; use if your shell has sourcing issues or you want to be certain `run()` is invoked.
+
+### Frontend tie-in (for local dev)
+
+- The frontend streaming route reads `backend/.env` and spawns `python -m socialcrew_ai.main` with `PYTHONPATH=src`.
+- Set `TOPIC` in the UI or in env; outputs land in this backend folder for the frontend to read.

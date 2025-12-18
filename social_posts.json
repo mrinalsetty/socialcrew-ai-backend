@@ -1,44 +1,42 @@
-```json
 {
-  "facebook": [
+  "x": [
     {
-      "hook": "UNLEASH YOUR INNER ACE!",
-      "body": "Did you know that tennis improves your hand-eye coordination and reaction time? Get ready to serve up a win!",
-      "cta": "Sign up for a lesson with our tennis coaches today!",
-      "hashtags": "#tennis #fitness #sports"
+      "hook": "ACE the day! What's your go-to tennis strategy for a winning match?",
+      "body": "Whether it's a precise serve or a sharp volley, every player has their secret to success. Share with us in the comments below the one thing that makes you an unbeatable champion!",
+      "cta": "Comment below!",
+      "hashtags": "#tennis #tennistips #winninggames"
     },
     {
-      "hook": "TENNIS TRIVIA TIME!",
-      "body": "The earliest known tennis ball was made from wood. Can you believe it?",
-      "cta": "Share your favorite tennis fact in the comments below!",
-      "hashtags": "#tennis #history #sports"
+      "hook": "Ready, set, tennis! What are your favorite tennis memories?",
+      "body": "Was it your first tournament, a memorable match with friends, or a thrilling championship win? Share your favorite tennis moments and let's get the conversation started!",
+      "cta": "Share your story!",
+      "hashtags": "#tennis #tennissocial #throwback"
     },
     {
-      "hook": "IT'S TENNIS TUESDAY!",
-      "body": "New week, new goals. What are you working towards on the court?",
-      "cta": "Join our tennis community to stay motivated!",
-      "hashtags": "#tennistuesday #motivation #sports"
+      "hook": "Serving up a challenge Get ready for a fun tennis quiz!",
+      "body": "Think you know your Grand Slams from your Grand Finals? Prove it with our quick tennis trivia challenge! Answer correctly to earn your virtual trophy",
+      "cta": "Participate with #tennisquiz",
+      "hashtags": "#tennisquiz #tenisfun #trivia"
     }
   ],
   "linkedin": [
     {
-      "hook": "The Power of Tennis for Professional Development",
-      "body": "Tennis can help you develop skills like teamwork, focus, and strategic thinking – essential for career success. Learn how tennis can take your professional game to the next level!",
-      "cta": "Download our free e-book on the benefits of tennis for professionals.",
-      "hashtags": "#tennis #professionaldevelopment #careercoach"
+      "hook": "Developing teamwork skills through tennis",
+      "body": "Playing tennis requires strategy, communication, and trust. These values can be applied to any professional setting, helping you become a better team player and leader. Read more about the parallels between tennis and business success",
+      "cta": "Read the full article: ",
+      "hashtags": "#tennis #leadership #teamwork"
     },
     {
-      "hook": "Why Tennis is a Great Networking Opportunity",
-      "body": "Networking in a tennis setting can lead to valuable connections and new business opportunities. Don't miss out on the chance to meet fellow tennis enthusiasts.",
-      "cta": "Join our tennis networking event and take your business to the next level.",
-      "hashtags": "#tennis #networking #businessevent"
+      "hook": "How to stay focused under pressure, a lesson from tennis",
+      "body": "Professional tennis players can maintain their composure even in the most intense situations. Learn how they do it, and apply these strategies to your work life",
+      "cta": "Read the full article: ",
+      "hashtags": "#tennis #focus #productivity"
     },
     {
-      "hook": "Get Ready to Level Up Your Game",
-      "body": "Are you looking to improve your tennis game? Our expert coaches offer personalized lessons to help you achieve your goals.",
-      "cta": "Book a lesson with our trainers today!",
-      "hashtags": "#tennis #coaching #sports"
+      "hook": "The mental game of tennis: overcoming obstacles",
+      "body": "Tennis players often have to deal with setbacks and doubts. However, they find ways to bounce back stronger than ever. Learn how you can apply these mental resilience strategies to your own life",
+      "cta": "Read the full article: ",
+      "hashtags": "#tennis #resilience #motivation"
     }
   ]
 }
-```

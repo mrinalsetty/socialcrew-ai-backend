@@ -82,3 +82,8 @@ def test():
 
     except Exception as e:
         raise Exception(f"An error occurred while testing the crew: {e}")
+
+
+if __name__ == "__main__":
+    # Allow `python -m socialcrew_ai.main` to run the default entry
+    run()
