@@ -1,3 +1,30 @@
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
+from fastapi import HTTPException
+import os
+
+app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://socialcrew-ai-frontend.vercel.app",  # Vercel prod
+        "http://localhost:3000"  # Local dev
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Serve a blank favicon.ico to prevent 404 errors
+@app.get("/favicon.ico", include_in_schema=False)
+def favicon():
+    from fastapi.responses import Response
+    # 1x1 transparent PNG favicon
+    favicon_bytes = (
+        b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\x0bIDATx\x9cc``\x00\x00\x00\x02\x00\x01\xe2!\xbc3\x00\x00\x00\x00IEND\xaeB`\x82'
+    )
+    return Response(content=favicon_bytes, media_type="image/png")
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -79,6 +106,18 @@ def get_file(name: str):
             raise HTTPException(status_code=500, detail="Error reading JSON file")
     else:
         return FileResponse(file_path)
+
+from pydantic import BaseModel
+
+# Pydantic models for /run endpoint
+class RunRequest(BaseModel):
+    topic: str
+
+class RunResponse(BaseModel):
+    status: str
+    topic: str
+    year: str
+    message: str
 
 message: str
 
