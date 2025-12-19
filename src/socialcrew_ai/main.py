@@ -116,6 +116,11 @@ from pydantic import BaseModel
 class RunRequest(BaseModel):
     topic: str
 
+class RunResponse(BaseModel):
+    status: str
+    topic: str
+    year: str
+    message: str
 
 def run(topic: str = "AI LLMs"):
     """
