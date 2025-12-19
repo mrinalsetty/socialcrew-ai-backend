@@ -1,13 +1,63 @@
 generate_content_task:
   description: >
-    Produce short social media posts for X and LinkedIn about "{topic}". Keep it concise and on-topic.
+    Create engaging social media posts about "{topic}" for X (Twitter), Instagram, LinkedIn, and YouTube platforms.
+
+    You MUST return ONLY valid JSON in this EXACT format, no other text:
+    {
+      "x": [
+        {
+          "hook": "attention-grabbing opening line",
+          "body": "main content of the post",
+          "cta": "call to action",
+          "hashtags": ["hashtag1", "hashtag2", "hashtag3"]
+        }
+      ],
+      "instagram": [
+        {
+          "hook": "attention-grabbing opening line",
+          "body": "main content of the post",
+          "cta": "call to action",
+          "hashtags": ["hashtag1", "hashtag2", "hashtag3"]
+        }
+      ],
+      "linkedin": [
+        {
+          "hook": "attention-grabbing opening line",
+          "body": "main content of the post", 
+          "cta": "call to action",
+          "hashtags": ["hashtag1", "hashtag2", "hashtag3"]
+        }
+      ],
+      "youtube": [
+        {
+          "hook": "video title idea",
+          "body": "video description",
+          "cta": "call to action for viewers",
+          "hashtags": ["hashtag1", "hashtag2", "hashtag3"]
+        }
+      ]
+    }
+
+    Requirements:
+    - Create exactly 3 posts for each platform (x, instagram, linkedin, youtube)
+    - hashtags must be an array of strings without the # symbol
+    - Return ONLY the JSON object, no markdown, no explanation, no code blocks
+    - Tailor content style to each platform (short for X, visual for Instagram, professional for LinkedIn, video-focused for YouTube)
   expected_output: >
-    JSON with two platforms (x, linkedin), each containing 3 post variants with hook, body, cta, and hashtags.
+    Pure JSON object with keys "x", "instagram", "linkedin", and "youtube", each containing an array of 3 post objects.
   agent: content_creator
 
 analytics_task:
   description: >
-    Based on the generated posts about "{topic}", summarize top-performing ideas and give 3 recommendations.
+    Analyze the social media posts created about "{topic}" and provide performance insights.
+
+    Include:
+    - Summary of top-performing post ideas per platform
+    - 3 tactical recommendations for improving engagement
+    - Best posting times suggestion for each platform
+    - Platform-specific optimization tips
   expected_output: >
-    Markdown summary listing top posts and 3 tactical recommendations.
+    Markdown formatted summary with headers, bullet points, and clear recommendations.
   agent: social_analyst
+  context:
+    - generate_content_task
