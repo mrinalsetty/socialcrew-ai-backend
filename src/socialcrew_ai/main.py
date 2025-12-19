@@ -134,10 +134,27 @@ def get_file(name: str):
     if name.endswith(".json"):
         try:
             with open(file_path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            return JSONResponse(content=data)
-        except json.JSONDecodeError as e:
-            raise HTTPException(status_code=500, detail=f"Invalid JSON: {e}")
+                raw = f.read()
+            
+            # Try to parse as JSON
+            try:
+                data = json.loads(raw)
+                return JSONResponse(content=data)
+            except json.JSONDecodeError:
+                # CrewAI sometimes wraps JSON in markdown code blocks
+                # Try to extract JSON from ```json ... ``` blocks
+                import re
+                match = re.search(r'```(?:json)?\s*([\s\S]*?)\s*```', raw)
+                if match:
+                    cleaned = match.group(1).strip()
+                    try:
+                        data = json.loads(cleaned)
+                        return JSONResponse(content=data)
+                    except json.JSONDecodeError:
+                        pass
+                
+                # Return raw content as string if we can't parse it
+                return JSONResponse(content={"raw": raw, "error": "Could not parse as JSON"})
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error reading file: {e}")
     
