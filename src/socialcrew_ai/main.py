@@ -1,53 +1,47 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
-from fastapi import HTTPException
-import os
+from fastapi.responses import FileResponse, JSONResponse, HTMLResponse, Response
+from pydantic import BaseModel
 from datetime import datetime
+import os
 import sys
+import json
+from pathlib import Path
+
+# Import your crew
 from socialcrew_ai.crew import SocialcrewAi
 
 app = FastAPI()
+
+# CORS configuration
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://socialcrew-ai-frontend.vercel.app",  # Vercel prod
-        "http://localhost:3000"  # Local dev
+        "https://socialcrew-ai-frontend.vercel.app",
+        "http://localhost:3000",
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Determine the output directory - use CWD for Render compatibility
+OUTPUT_DIR = Path(os.getcwd())
+KNOWLEDGE_DIR = OUTPUT_DIR / "knowledge"
 
 # Serve a blank favicon.ico to prevent 404 errors
 @app.get("/favicon.ico", include_in_schema=False)
 def favicon():
-    from fastapi.responses import Response
-    # 1x1 transparent PNG favicon
     favicon_bytes = (
-        b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\x0bIDATx\x9cc``\x00\x00\x00\x02\x00\x01\xe2!\xbc3\x00\x00\x00\x00IEND\xaeB`\x82'
+        b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01'
+        b'\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89'
+        b'\x00\x00\x00\x0bIDATx\x9cc``\x00\x00\x00\x02\x00\x01'
+        b'\xe2!\xbc3\x00\x00\x00\x00IEND\xaeB`\x82'
     )
     return Response(content=favicon_bytes, media_type="image/png")
 
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
-from fastapi import HTTPException
-import os
 
-app = FastAPI()
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "https://socialcrew-ai-frontend.vercel.app",  # Vercel prod
-        "http://localhost:3000"  # Local dev
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Root endpoint: Friendly HTML welcome page
+# Root endpoint
 @app.get("/", response_class=HTMLResponse)
 def root():
     return """
@@ -61,145 +55,209 @@ def root():
                 a { color: #38bdf8; text-decoration: none; }
                 a:hover { text-decoration: underline; }
                 ul { margin-top: 1rem; }
+                code { background: #333; padding: 2px 6px; border-radius: 4px; }
             </style>
         </head>
         <body>
             <div class="container">
                 <h1>👋 Welcome to SocialCrew AI Backend</h1>
-                <p>This is the backend API for SocialCrew AI, powering social content analytics and generation.</p>
-                <h2>Useful Endpoints</h2>
+                <p>This is the backend API for SocialCrew AI.</p>
+                <h2>Endpoints</h2>
                 <ul>
-                    <li><b>POST</b> <code>/run</code> &mdash; Run the main AI workflow</li>
-                    <li><b>GET</b> <code>/file/&lt;name&gt;</code> &mdash; Download output files (e.g., <code>social_posts.json</code>, <code>analytics_summary.md</code>, <code>user_preference.txt</code>)</li>
+                    <li><b>POST</b> <code>/run</code> — Run the AI workflow</li>
+                    <li><b>GET</b> <code>/file/{name}</code> — Download output files</li>
+                    <li><b>GET</b> <code>/health</code> — Health check</li>
+                    <li><b>GET</b> <code>/debug/files</code> — List available files</li>
                 </ul>
                 <h2>Frontend</h2>
-                <p>Visit the <a href="https://socialcrew-ai-frontend.vercel.app" target="_blank">SocialCrew AI Frontend</a> for the user interface.</p>
-                <hr>
-                <small>SocialCrew AI &copy; 2025</small>
+                <p><a href="https://socialcrew-ai-frontend.vercel.app" target="_blank">SocialCrew AI Frontend</a></p>
             </div>
         </body>
     </html>
     """
 
-# Serve output files for frontend
+
+# Health check endpoint
+@app.get("/health")
+def health():
+    return {
+        "status": "healthy",
+        "cwd": str(OUTPUT_DIR),
+        "files_exist": {
+            "social_posts.json": (OUTPUT_DIR / "social_posts.json").exists(),
+            "analytics_summary.md": (OUTPUT_DIR / "analytics_summary.md").exists(),
+        }
+    }
+
+
+# Debug endpoint to list files
+@app.get("/debug/files")
+def debug_files():
+    files = []
+    for f in OUTPUT_DIR.iterdir():
+        if f.is_file() and f.suffix in ['.json', '.md', '.txt', '.log']:
+            files.append({
+                "name": f.name,
+                "size": f.stat().st_size,
+                "path": str(f)
+            })
+    return {"cwd": str(OUTPUT_DIR), "files": files}
+
+
+# Serve output files
 @app.get("/file/{name}")
 def get_file(name: str):
     allowed = {"social_posts.json", "analytics_summary.md", "user_preference.txt"}
+    
     if name not in allowed:
-        raise HTTPException(status_code=404, detail="File not found")
+        raise HTTPException(status_code=404, detail=f"File '{name}' not in allowed list")
 
-    # Determine file path (relative to backend root)
-    backend_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    # Determine file path
     if name == "user_preference.txt":
-        file_path = os.path.join(backend_root, "knowledge", name)
+        file_path = KNOWLEDGE_DIR / name
     else:
-        file_path = os.path.join(backend_root, name)
+        file_path = OUTPUT_DIR / name
 
-    if not os.path.exists(file_path):
-        raise HTTPException(status_code=404, detail="File not found")
+    # Debug logging
+    print(f"[get_file] Requested: {name}")
+    print(f"[get_file] Looking at: {file_path}")
+    print(f"[get_file] Exists: {file_path.exists()}")
+    print(f"[get_file] CWD contents: {list(OUTPUT_DIR.iterdir())}")
 
-    # Serve JSON as JSONResponse, others as FileResponse
+    if not file_path.exists():
+        raise HTTPException(
+            status_code=404, 
+            detail=f"File not found at {file_path}. CWD: {OUTPUT_DIR}"
+        )
+
+    # Serve JSON as JSONResponse
     if name.endswith(".json"):
         try:
-            import json
-            with open(file_path, "r") as f:
+            with open(file_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
             return JSONResponse(content=data)
-        except Exception:
-            raise HTTPException(status_code=500, detail="Error reading JSON file")
-    else:
-        return FileResponse(file_path)
+        except json.JSONDecodeError as e:
+            raise HTTPException(status_code=500, detail=f"Invalid JSON: {e}")
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error reading file: {e}")
+    
+    # Serve other files
+    return FileResponse(file_path)
 
-from pydantic import BaseModel
 
-# Pydantic models for /run endpoint
+# Pydantic models
 class RunRequest(BaseModel):
-    topic: str
+    topic: str = "AI LLMs"
 
 class RunResponse(BaseModel):
     status: str
     topic: str
     year: str
     message: str
+    files: dict = {}
 
+
+# Run endpoint
+@app.post("/run", response_model=RunResponse)
+async def run_crew_api(request: RunRequest):
+    topic = request.topic or "AI LLMs"
+    current_year = str(datetime.now().year)
+    
+    inputs = {
+        'topic': topic,
+        'current_year': current_year
+    }
+    
+    log_path = OUTPUT_DIR / "run.log"
+    ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    print(f"[run] Starting crew with topic: {topic}")
+    print(f"[run] CWD: {OUTPUT_DIR}")
+    
+    try:
+        # Run the crew
+        SocialcrewAi().crew().kickoff(inputs=inputs)
+        
+        # Log success
+        with log_path.open("a", encoding="utf-8") as fh:
+            fh.write(f"[{ts}] status=completed topic={topic} year={current_year}\n")
+        
+        # Check which files were created
+        files_status = {
+            "social_posts.json": (OUTPUT_DIR / "social_posts.json").exists(),
+            "analytics_summary.md": (OUTPUT_DIR / "analytics_summary.md").exists(),
+        }
+        
+        print(f"[run] Completed. Files: {files_status}")
+        
+        return RunResponse(
+            status="completed",
+            topic=topic,
+            year=current_year,
+            message="Crew run completed successfully.",
+            files=files_status
+        )
+        
+    except Exception as e:
+        # Log failure
+        with log_path.open("a", encoding="utf-8") as fh:
+            fh.write(f"[{ts}] status=failed topic={topic} error={e}\n")
+        
+        print(f"[run] Failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# CLI functions for local development
 def run(topic: str = "AI LLMs"):
-    """
-    Run the crew.
-    """
+    """Run the crew (CLI)."""
     inputs = {
         'topic': topic,
         'current_year': str(datetime.now().year)
     }
-    from pathlib import Path
-    log_path = Path("run.log")
-    ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     try:
-        print(f"[socialcrew_ai.main] Running with topic: {topic}")
-        print("[socialcrew_ai.main] CWD:", os.getcwd())
-        print("[socialcrew_ai.main] Will write outputs to:", Path(os.getcwd()).resolve())
         SocialcrewAi().crew().kickoff(inputs=inputs)
-        # Append run completion to log
-        with log_path.open("a", encoding="utf-8") as fh:
-            fh.write(f"[{ts}] status=completed topic={topic} year={inputs['current_year']}\n")
-        return {"status": "completed", "topic": topic, "year": inputs['current_year'], "message": "Crew run completed successfully."}
+        return {"status": "completed", "topic": topic}
     except Exception as e:
-        # Append failure to log
-        with log_path.open("a", encoding="utf-8") as fh:
-            fh.write(f"[{ts}] status=failed topic={topic} error={e}\n")
-        return {"status": "failed", "topic": topic, "year": inputs['current_year'], "message": str(e)}
-
-
-# FastAPI endpoint
-@app.post("/run", response_model=RunResponse)
-async def run_crew_api(request: RunRequest):
-    result = run(request.topic)
-    if result["status"] == "failed":
-        raise HTTPException(status_code=500, detail=result["message"])
-    return result
+        return {"status": "failed", "error": str(e)}
 
 
 def train():
-    """
-    Train the crew for a given number of iterations.
-    """
-    topic = os.environ.get('TOPIC') or 'AI LLMs'
-    inputs = {
-        "topic": topic,
-        'current_year': str(datetime.now().year)
-    }
+    """Train the crew."""
+    topic = os.environ.get('TOPIC', 'AI LLMs')
+    inputs = {"topic": topic, 'current_year': str(datetime.now().year)}
     try:
-        SocialcrewAi().crew().train(n_iterations=int(sys.argv[1]), filename=sys.argv[2], inputs=inputs)
-
+        SocialcrewAi().crew().train(
+            n_iterations=int(sys.argv[1]), 
+            filename=sys.argv[2], 
+            inputs=inputs
+        )
     except Exception as e:
-        raise Exception(f"An error occurred while training the crew: {e}")
+        raise Exception(f"Training error: {e}")
+
 
 def replay():
-    """
-    Replay the crew execution from a specific task.
-    """
+    """Replay crew execution."""
     try:
         SocialcrewAi().crew().replay(task_id=sys.argv[1])
-
     except Exception as e:
-        raise Exception(f"An error occurred while replaying the crew: {e}")
+        raise Exception(f"Replay error: {e}")
+
 
 def test():
-    """
-    Test the crew execution and returns the results.
-    """
-    topic = os.environ.get('TOPIC') or 'AI LLMs'
-    inputs = {
-        "topic": topic,
-        "current_year": str(datetime.now().year)
-    }
-    
+    """Test the crew."""
+    topic = os.environ.get('TOPIC', 'AI LLMs')
+    inputs = {"topic": topic, "current_year": str(datetime.now().year)}
     try:
-        SocialcrewAi().crew().test(n_iterations=int(sys.argv[1]), eval_llm=sys.argv[2], inputs=inputs)
-
+        SocialcrewAi().crew().test(
+            n_iterations=int(sys.argv[1]), 
+            eval_llm=sys.argv[2], 
+            inputs=inputs
+        )
     except Exception as e:
-        raise Exception(f"An error occurred while testing the crew: {e}")
+        raise Exception(f"Test error: {e}")
 
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("socialcrew_ai.main:app", host="0.0.0.0", port=int(os.environ.get("PORT", 8000)), reload=True)
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run("socialcrew_ai.main:app", host="0.0.0.0", port=port, reload=True)
