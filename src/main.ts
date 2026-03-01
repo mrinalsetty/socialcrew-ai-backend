@@ -11,8 +11,13 @@ async function bootstrap() {
     new FastifyAdapter(),
   );
 
+  const allowedOrigins = (process.env.CORS_ORIGINS || '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: allowedOrigins,
   });
 
   const port = Number(process.env.PORT || 4000);
