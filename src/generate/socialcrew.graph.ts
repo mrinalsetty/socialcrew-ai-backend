@@ -9,15 +9,16 @@ import {
   AnalystAgentOutput,
   SocialAnalystService,
 } from '../agents/social-analyst.service';
+import type { GenerateRequest, SocialPlatform } from './generate.types';
 
 const SocialCrewState = Annotation.Root({
-  topic: Annotation<string>,
+  request: Annotation<GenerateRequest>,
   creatorOutput: Annotation<CreatorAgentOutput | null>,
   analystOutput: Annotation<AnalystAgentOutput | null>,
 });
 
 export interface SocialCrewGraphResult {
-  topic: string;
+  request: GenerateRequest;
   creatorOutput: CreatorAgentOutput | null;
   analystOutput: AnalystAgentOutput | null;
 }
@@ -29,12 +30,12 @@ export class SocialCrewGraph {
     private readonly socialAnalystService: SocialAnalystService,
   ) {}
 
-  async invoke(topic: string): Promise<SocialCrewGraphResult> {
+  async invoke(request: GenerateRequest): Promise<SocialCrewGraphResult> {
     const graph = new StateGraph(SocialCrewState)
       .addNode('creator', async (state: unknown) => {
         const safeState = this.toGraphState(state);
         const creatorOutput = await this.contentCreatorService.run(
-          safeState.topic,
+          safeState.request,
         );
         return { creatorOutput };
       })
@@ -42,7 +43,7 @@ export class SocialCrewGraph {
         const safeState = this.toGraphState(state);
 
         const analystOutput = await this.socialAnalystService.run(
-          safeState.topic,
+          safeState.request,
           safeState.creatorOutput?.posts ?? [],
         );
 
@@ -54,7 +55,7 @@ export class SocialCrewGraph {
       .compile();
 
     const rawResult: unknown = await graph.invoke({
-      topic,
+      request,
       creatorOutput: null,
       analystOutput: null,
     });
@@ -65,7 +66,14 @@ export class SocialCrewGraph {
   private toGraphState(state: unknown): SocialCrewGraphResult {
     if (!state || typeof state !== 'object') {
       return {
-        topic: '',
+        request: {
+          topic: '',
+          platform: 'LINKEDIN',
+          brandName: '',
+          audience: '',
+          tone: '',
+          ctaStyle: '',
+        },
         creatorOutput: null,
         analystOutput: null,
       };
@@ -74,7 +82,16 @@ export class SocialCrewGraph {
     const maybeState = state as Partial<SocialCrewGraphResult>;
 
     return {
-      topic: typeof maybeState.topic === 'string' ? maybeState.topic : '',
+      request: this.isGenerateRequest(maybeState.request)
+        ? maybeState.request
+        : {
+            topic: '',
+            platform: 'LINKEDIN',
+            brandName: '',
+            audience: '',
+            tone: '',
+            ctaStyle: '',
+          },
       creatorOutput: this.isCreatorOutput(maybeState.creatorOutput)
         ? maybeState.creatorOutput
         : null,
@@ -82,6 +99,28 @@ export class SocialCrewGraph {
         ? maybeState.analystOutput
         : null,
     };
+  }
+
+  private isGenerateRequest(value: unknown): value is GenerateRequest {
+    if (!value || typeof value !== 'object') return false;
+
+    const maybeValue = value as Partial<GenerateRequest>;
+
+    return (
+      typeof maybeValue.topic === 'string' &&
+      this.isPlatform(maybeValue.platform)
+    );
+  }
+
+  private isPlatform(value: unknown): value is SocialPlatform {
+    return (
+      value === 'LINKEDIN' ||
+      value === 'YOUTUBE' ||
+      value === 'FACEBOOK' ||
+      value === 'X' ||
+      value === 'INSTAGRAM' ||
+      value === 'THREADS'
+    );
   }
 
   private isCreatorOutput(value: unknown): value is CreatorAgentOutput {

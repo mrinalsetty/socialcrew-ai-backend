@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { SocialCrewGraph } from './socialcrew.graph';
 import type { GeneratedPost } from '../agents/content-creator.service';
+import type { GenerateRequest } from './generate.types';
 
 export interface GenerateResponse {
   contentCreator: GeneratedPost[];
@@ -17,8 +18,8 @@ export interface GenerateResponse {
 export class GenerateService {
   constructor(private readonly socialCrewGraph: SocialCrewGraph) {}
 
-  async generateFromTopic(topic: string): Promise<GenerateResponse> {
-    const result = await this.socialCrewGraph.invoke(topic);
+  async generateFromTopic(input: GenerateRequest): Promise<GenerateResponse> {
+    const result = await this.socialCrewGraph.invoke(input);
 
     return {
       contentCreator: result.creatorOutput?.posts ?? [],

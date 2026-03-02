@@ -1,6 +1,7 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import Groq from 'groq-sdk';
 import type { GeneratedPost } from './content-creator.service';
+import type { GenerateRequest } from '../generate/generate.types';
 
 export type AnalystAgentOutput = {
   bestPost: number;
@@ -19,7 +20,7 @@ type RawAnalystResponse = {
 @Injectable()
 export class SocialAnalystService {
   async run(
-    topic: string,
+    input: GenerateRequest,
     posts: GeneratedPost[],
   ): Promise<AnalystAgentOutput> {
     const groq = this.getClient();
@@ -44,6 +45,7 @@ Return ONLY valid JSON in this exact shape:
 
 Rules:
 - Pick the single strongest post by id.
+- Evaluate for the requested platform, audience, tone, and CTA style.
 - Explain why it wins in plain English.
 - Suggestions must be concrete and practical.
 - No markdown code fences.
@@ -51,7 +53,17 @@ Rules:
         },
         {
           role: 'user',
-          content: `Topic: ${topic}\n\nPosts:\n${JSON.stringify(posts, null, 2)}`,
+          content: `
+Topic: ${input.topic}
+Platform: ${input.platform}
+Brand Name: ${input.brandName || 'Not provided'}
+Audience: ${input.audience || 'General audience'}
+Tone: ${input.tone || 'Professional'}
+CTA Style: ${input.ctaStyle || 'Soft CTA'}
+
+Posts:
+${JSON.stringify(posts, null, 2)}
+          `.trim(),
         },
       ],
     });

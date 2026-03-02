@@ -1,5 +1,6 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import Groq from 'groq-sdk';
+import type { GenerateRequest } from '../generate/generate.types';
 
 export type GeneratedPost = {
   id: number;
@@ -27,7 +28,7 @@ type RawApiResponse = {
 
 @Injectable()
 export class ContentCreatorService {
-  async run(topic: string): Promise<CreatorAgentOutput> {
+  async run(input: GenerateRequest): Promise<CreatorAgentOutput> {
     const groq = this.getClient();
 
     const completion = await groq.chat.completions.create({
@@ -55,16 +56,26 @@ Return ONLY valid JSON in this exact shape:
 
 Rules:
 - Generate exactly 3 posts.
-- Make them modern, concise, and engaging.
-- Optimize for social media, especially LinkedIn / X style readability.
-- Each post should feel different in angle.
+- Write specifically for the requested platform.
+- Respect the requested brand tone, audience, and CTA style.
+- Make each post meaningfully different in angle.
 - Keep hashtags relevant and not spammy.
 - No markdown code fences.
           `.trim(),
         },
         {
           role: 'user',
-          content: `Create 3 strong social posts about: ${topic}`,
+          content: `
+Topic: ${input.topic}
+Platform: ${input.platform}
+Brand Name: ${input.brandName || 'Not provided'}
+Audience: ${input.audience || 'General audience'}
+Tone: ${input.tone || 'Professional'}
+CTA Style: ${input.ctaStyle || 'Soft CTA'}
+
+Platform guidance:
+${this.getPlatformGuidance(input.platform)}
+          `.trim(),
         },
       ],
     });
@@ -92,6 +103,25 @@ Rules:
     }
 
     return new Groq({ apiKey });
+  }
+
+  private getPlatformGuidance(platform: GenerateRequest['platform']): string {
+    switch (platform) {
+      case 'LINKEDIN':
+        return 'Write thought-leadership style, insight-driven, clean paragraphs, strong professional hook.';
+      case 'YOUTUBE':
+        return 'Write like a YouTube post/video concept: title-forward, curiosity-driven, clear audience payoff.';
+      case 'FACEBOOK':
+        return 'Write conversationally, community-friendly, slightly warmer, engagement-oriented.';
+      case 'X':
+        return 'Write concise, punchy, high-signal, hook-heavy, easy to skim.';
+      case 'INSTAGRAM':
+        return 'Write visually driven, emotionally engaging, caption-first, relatable and crisp.';
+      case 'THREADS':
+        return 'Write casual, human, insight-rich, conversational and current.';
+      default:
+        return 'Write for a general social media audience.';
+    }
   }
 
   private parseJson(raw: string): RawApiResponse {
