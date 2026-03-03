@@ -1,6 +1,10 @@
 import { BadRequestException, Body, Controller, Post } from '@nestjs/common';
-import { GenerateService, GenerateResponse } from './generate.service';
-import type { GenerateRequest, SocialPlatform } from './generate.types';
+import { GenerateService } from './generate.service';
+import type {
+  GenerateRequest,
+  GenerateResponse,
+  SocialPlatform,
+} from './generate.types';
 
 const allowedPlatforms: SocialPlatform[] = [
   'LINKEDIN',

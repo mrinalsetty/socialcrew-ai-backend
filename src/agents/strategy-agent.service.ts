@@ -1,51 +1,53 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import Groq from 'groq-sdk';
-import type { GenerateRequest } from '../generate/generate.types';
-
-export type StrategyAgentOutput = {
-  angle: string;
-  audienceFit: string;
-  hookStyle: string;
-  ctaApproach: string;
-  brief: string;
-};
+import type {
+  GenerateRequest,
+  StrategyOutput,
+} from '../generate/generate.types';
 
 type RawStrategyResponse = {
-  angle?: unknown;
-  audienceFit?: unknown;
-  hookStyle?: unknown;
-  ctaApproach?: unknown;
-  brief?: unknown;
+  intro?: unknown;
+  fullResponse?: unknown;
+  recommendedAngles?: unknown;
+  audienceSegments?: unknown;
 };
 
 @Injectable()
 export class StrategyAgentService {
-  async run(input: GenerateRequest): Promise<StrategyAgentOutput> {
+  async run(
+    input: GenerateRequest,
+    agentName: string,
+  ): Promise<StrategyOutput> {
     const groq = this.getClient();
 
     const completion = await groq.chat.completions.create({
       model: process.env.GROQ_ANALYST_MODEL || 'llama-3.3-70b-versatile',
-      temperature: 0.3,
+      temperature: 0.45,
       response_format: { type: 'json_object' },
       messages: [
         {
           role: 'system',
           content: `
-You are Strategy Agent.
+You are a warm, polished, human-friendly social media strategist.
+
+Your first name is ${agentName}.
 
 Return ONLY valid JSON in this exact shape:
 {
-  "angle": "main content angle",
-  "audienceFit": "why this topic fits the audience",
-  "hookStyle": "recommended hook style",
-  "ctaApproach": "recommended CTA style",
-  "brief": "one concise creative strategy brief"
+  "intro": "one friendly introduction message",
+  "fullResponse": "a comprehensive but human-friendly strategy explanation",
+  "recommendedAngles": ["angle 1", "angle 2", "angle 3"],
+  "audienceSegments": ["segment 1", "segment 2", "segment 3"]
 }
 
 Rules:
-- Think like a social strategist.
-- Optimize for the requested platform.
-- Keep the brief concise and actionable.
+- Sound like a real teammate, not a bot.
+- Use only your first name naturally.
+- Be warm, polished, stylish, and easy to understand.
+- Avoid technical jargon.
+- Explain what strategy you chose, why you chose it, how the platform affects the approach, and who the content is best for.
+- The user should feel like you are personally guiding them.
+- Keep it detailed but natural and conversational.
 - No markdown code fences.
           `.trim(),
         },
@@ -56,8 +58,15 @@ Topic: ${input.topic}
 Platform: ${input.platform}
 Brand Name: ${input.brandName || 'Personal Brand'}
 Audience: ${input.audience || 'Founders, creators, small business operators'}
-Tone: ${input.tone || 'Smart, practical, human'}
+Tone: ${input.tone || 'Warm, polished, stylish'}
 CTA Style: ${input.ctaStyle || 'Soft CTA'}
+
+Please introduce yourself first, then clearly explain:
+1. the overall strategy,
+2. the strongest angles,
+3. the platform-specific reasoning,
+4. the audience segments,
+5. why this approach should work.
           `.trim(),
         },
       ],
@@ -67,26 +76,21 @@ CTA Style: ${input.ctaStyle || 'Soft CTA'}
     const parsed = this.parseJson(raw);
 
     return {
-      angle:
-        typeof parsed.angle === 'string'
-          ? parsed.angle
-          : 'Insight-driven educational angle',
-      audienceFit:
-        typeof parsed.audienceFit === 'string'
-          ? parsed.audienceFit
-          : 'This topic matches the target audience.',
-      hookStyle:
-        typeof parsed.hookStyle === 'string'
-          ? parsed.hookStyle
-          : 'Strong curiosity hook',
-      ctaApproach:
-        typeof parsed.ctaApproach === 'string'
-          ? parsed.ctaApproach
-          : 'Soft CTA',
-      brief:
-        typeof parsed.brief === 'string'
-          ? parsed.brief
-          : 'Create a concise, platform-aware post with a strong opening hook.',
+      agentName,
+      intro:
+        typeof parsed.intro === 'string'
+          ? parsed.intro
+          : `Hi, I’m ${agentName}. I’ll map out the strategy and make sure the direction feels right before we write anything.`,
+      fullResponse:
+        typeof parsed.fullResponse === 'string'
+          ? parsed.fullResponse
+          : `Here’s how I’d approach this. I’d position the idea in a way that feels relevant to the audience, native to ${input.platform}, and clear enough that the content feels intentional rather than generic.`,
+      recommendedAngles: Array.isArray(parsed.recommendedAngles)
+        ? parsed.recommendedAngles.map((item: unknown) => String(item))
+        : [],
+      audienceSegments: Array.isArray(parsed.audienceSegments)
+        ? parsed.audienceSegments.map((item: unknown) => String(item))
+        : [],
     };
   }
 

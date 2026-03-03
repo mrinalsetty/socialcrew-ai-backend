@@ -4,6 +4,7 @@ import { RootModule } from './root/root.module';
 import { HealthModule } from './health/health.module';
 import { GenerateModule } from './generate/generate.module';
 import { SystemModule } from './system/system.module';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { SystemModule } from './system/system.module';
     HealthModule,
     GenerateModule,
     SystemModule,
+    ChatModule,
   ],
 })
 export class AppModule {}

@@ -1,54 +1,57 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import Groq from 'groq-sdk';
-import type { GeneratedPost } from './content-creator.service';
-import type { GenerateRequest } from '../generate/generate.types';
-import type { StrategyAgentOutput } from './strategy-agent.service';
-
-export type AnalystAgentOutput = {
-  bestPost: number;
-  reason: string;
-  suggestions: string[];
-  positioning: string;
-};
+import type {
+  AnalystOutput,
+  CreatorOutput,
+  GenerateRequest,
+  StrategyOutput,
+} from '../generate/generate.types';
 
 type RawAnalystResponse = {
+  intro?: unknown;
+  fullResponse?: unknown;
   bestPost?: unknown;
-  reason?: unknown;
-  suggestions?: unknown;
-  positioning?: unknown;
+  comparison?: unknown;
+  audienceFitNotes?: unknown;
 };
 
 @Injectable()
 export class SocialAnalystService {
   async run(
     input: GenerateRequest,
-    posts: GeneratedPost[],
-    strategy: StrategyAgentOutput,
-  ): Promise<AnalystAgentOutput> {
+    strategy: StrategyOutput,
+    creator: CreatorOutput,
+    agentName: string,
+  ): Promise<AnalystOutput> {
     const groq = this.getClient();
 
     const completion = await groq.chat.completions.create({
       model: process.env.GROQ_ANALYST_MODEL || 'llama-3.3-70b-versatile',
-      temperature: 0.2,
+      temperature: 0.28,
       response_format: { type: 'json_object' },
       messages: [
         {
           role: 'system',
           content: `
-You are Social Analyst, a performance and messaging evaluation agent.
+You are a polished, human-friendly social content analyst.
+
+Your first name is ${agentName}.
 
 Return ONLY valid JSON in this exact shape:
 {
+  "intro": "friendly self-introduction",
+  "fullResponse": "comprehensive audience-friendly analysis",
   "bestPost": 1,
-  "reason": "why this post is strongest",
-  "suggestions": ["suggestion 1", "suggestion 2", "suggestion 3"],
-  "positioning": "short summary of how the topic should be positioned"
+  "comparison": ["comparison point 1", "comparison point 2", "comparison point 3", "comparison point 4", "comparison point 5"],
+  "audienceFitNotes": ["note 1", "note 2", "note 3"]
 }
 
 Rules:
-- Pick the strongest post by id.
-- Evaluate for platform fit, clarity, hook strength, and likely engagement.
-- Suggestions must be concrete.
+- Sound like a real teammate, not a bot.
+- Use only your first name naturally.
+- Compare all 5 posts.
+- Explain what each one is good for, who it suits, and what audience or demographic is likely to respond.
+- Be thoughtful, clear, and easy to read.
 - No markdown code fences.
           `.trim(),
         },
@@ -57,17 +60,26 @@ Rules:
           content: `
 Topic: ${input.topic}
 Platform: ${input.platform}
-Brand Name: ${input.brandName || 'Personal Brand'}
 Audience: ${input.audience || 'Founders, creators, small business operators'}
-Tone: ${input.tone || 'Smart, practical, human'}
-CTA Style: ${input.ctaStyle || 'Soft CTA'}
 
-Strategy Brief: ${strategy.brief}
-Hook Style: ${strategy.hookStyle}
-CTA Approach: ${strategy.ctaApproach}
+Strategy:
+${strategy.fullResponse}
+
+Creator Overview:
+${creator.overview}
 
 Posts:
-${JSON.stringify(posts, null, 2)}
+${JSON.stringify(creator.posts, null, 2)}
+
+Common Hashtags:
+${creator.commonHashtags.join(', ')}
+
+Please:
+1. introduce yourself,
+2. analyse all 5 posts,
+3. explain which is strongest and why,
+4. explain who each one is best for,
+5. keep it human and conversational.
           `.trim(),
         },
       ],
@@ -77,21 +89,25 @@ ${JSON.stringify(posts, null, 2)}
     const parsed = this.parseJson(raw);
 
     return {
+      agentName,
+      intro:
+        typeof parsed.intro === 'string'
+          ? parsed.intro
+          : `Hi, I’m ${agentName}. I’ve reviewed all five options and I’ll walk you through which one stands out and why.`,
+      fullResponse:
+        typeof parsed.fullResponse === 'string'
+          ? parsed.fullResponse
+          : 'I compared the five post directions for clarity, fit, audience relevance, tone, and platform style, and I’ve identified the strongest option based on which one feels most effective and naturally engaging.',
       bestPost:
         typeof parsed.bestPost === 'number'
           ? parsed.bestPost
           : Number(parsed.bestPost ?? 1),
-      reason:
-        typeof parsed.reason === 'string'
-          ? parsed.reason
-          : 'No reason returned.',
-      suggestions: Array.isArray(parsed.suggestions)
-        ? parsed.suggestions.map((item: unknown) => String(item))
+      comparison: Array.isArray(parsed.comparison)
+        ? parsed.comparison.map((item: unknown) => String(item))
         : [],
-      positioning:
-        typeof parsed.positioning === 'string'
-          ? parsed.positioning
-          : 'Position the topic with clarity and strong hooks.',
+      audienceFitNotes: Array.isArray(parsed.audienceFitNotes)
+        ? parsed.audienceFitNotes.map((item: unknown) => String(item))
+        : [],
     };
   }
 
@@ -122,7 +138,7 @@ ${JSON.stringify(posts, null, 2)}
       return parsedUnknown as RawAnalystResponse;
     } catch {
       throw new InternalServerErrorException(
-        'Social Analyst returned invalid JSON.',
+        'Analyst Agent returned invalid JSON.',
       );
     }
   }
